@@ -4,8 +4,9 @@ coverage
 coverage.json
 typechain
 typechain-types
-env.cjs
-secrets.cjs
+./env.cjs
+./secrets.cjs
+
 # Hardhat files
 cache
 artifacts
