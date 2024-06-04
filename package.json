@@ -12,17 +12,19 @@
     "deploy-local": "npx hardhat run scripts/sample-script.js --network localhost",
     "coverage": "npx hardhat coverage",
     "typechain:generate": "yarn typechain --target=ethers-v5 ./contracts/**/*.sol --out-dir=./types",
-    "deploy": "npx hardhat run scripts/deploy.cjs --network bscMainnet",
+    "deploy-fortune": "npx hardhat run scripts/deploy.cjs --network polygon",
+    "deploy-token": "npx hardhat run scripts/deploy-token.cjs --network polygon",
     "deploy-testnet": "npx hardhat run scripts/deploy-testnet.cjs --network sepolia",
-    "verify": "npx hardhat verify  --network sepolia"
+    "verify": "npx hardhat verify  --network polygon"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@chainlink/contracts": "^0.6.1",
+    "@chainlink/contracts": "^1.1.1",
     "@ethersproject/bignumber": "^5.7.0",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.8.2",
+    "dotenv": "^16.4.5",
     "ethers": "^5.7.2",
     "helpers": "^0.0.6"
   },

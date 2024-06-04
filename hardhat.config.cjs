@@ -2,34 +2,23 @@ require("@nomicfoundation/hardhat-toolbox");
 require('solidity-coverage');
 require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-etherscan");
-const secrets = require("./secrets.cjs");
+require("dotenv").config();
 
+const { POLYGON_RPC_PROVIDER, PRIVATE_KEY, POLYGONSCAN_API_KEY } = process.env;
 
 module.exports = {
   networks: {
-    bscTestnet :{
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-      accounts: [secrets.account[0]],
-    },
-    mumbai: {
-      url: "https://rpc-mumbai.maticvigil.com/",
-      accounts: [secrets.account[1]],
-      //gasPrice: 8000000000,
-      //gasLimit: 8000000000000
-    },
-    bscMainnet: {
-      url: "https://bsc-dataseed.binance.org/",
-      accounts: [secrets.account[0]],
-    },
-    hardhat: {
-    },
-    sepolia: {
-      url: "https://rpc.sepolia.org",
-      accounts: [secrets.account[0]]
+    // sepolia: {
+    //   url: "https://rpc.sepolia.org",
+    //   accounts: [secrets.account[0]]
+    // },
+    polygon: {
+      url: POLYGON_RPC_PROVIDER,
+      accounts: [PRIVATE_KEY]
     }
   },
   etherscan: {
-    apiKey: secrets.apiKey,
+    apiKey: POLYGONSCAN_API_KEY,
   },
   solidity: {
     gasReporter: {
@@ -37,7 +26,7 @@ module.exports = {
     },
     compilers: [
       {
-        version: "0.8.9",
+        version: "0.8.19",
         settings: {
           optimizer: {
             enabled: true,

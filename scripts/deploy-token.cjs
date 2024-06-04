@@ -7,14 +7,13 @@
 const hre = require("hardhat");
 
 async function main() {
-  const _vrfCoordinator = "0xAE975071Be8F8eE67addBC1A82488F1C24858067";
-  const Fortune = await hre.ethers.getContractFactory("Fortune");
-  const fortune = await Fortune.deploy(_vrfCoordinator);
+  const USDC = await hre.ethers.getContractFactory("USDC");
+  const usdc = await USDC.deploy();
 
-  await fortune.deployed();
+  await usdc.deployed();
 
   console.log(
-    `deployed to ${fortune.address}`
+    `deployed to ${usdc.address}`
   );
 }
 

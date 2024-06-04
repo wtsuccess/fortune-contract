@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+// import "@chainlink/contracts/src/v0.8/interfaces/.sol";
+// import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
-contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
+import { VRFConsumerBaseV2Plus } from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import { VRFV2PlusClient } from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import { IVRFCoordinatorV2Plus } from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFCoordinatorV2Plus.sol";
+
+contract Fortune is Pausable, VRFConsumerBaseV2Plus {
     using SafeERC20 for IERC20;
 
     enum DrawStatus {
         INITIAL,
         OPEN,
         CLOSING,
-        CLOSED,
-        EXPIRED
+        CLOSED
     }
 
     struct DistributionRate {
@@ -41,40 +43,33 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         uint256 expiredTime;
     }
 
-    uint256 public nextDrawId;
-
     IERC20 public entryToken;
+    DistributionRate public distributionRate;
+    IVRFCoordinatorV2Plus COORDINATOR;
 
     address treasurer;
 
-    DistributionRate public distributionRate;
-
-    VRFCoordinatorV2Interface COORDINATOR;
-
-    uint64 public s_subscriptionId;
-    bytes32 s_keyHash =
-        0x17cd473250a9a479dc7f234c64332ed4bc8af9e8ded7556aa6e66d83da49f470;
+    uint256 public nextDrawId;
+    uint256 public s_subscriptionId;
+    // bytes32 s_keyHash =
+    //     0x17cd473250a9a479dc7f234c64332ed4bc8af9e8ded7556aa6e66d83da49f470;
+    bytes32 s_keyHash;
     uint32 callbackGasLimit = 2_500_000;
     uint16 private constant requestConfirmations = 3;
 
     mapping(uint256 => Draw) public draws;
-
     mapping(uint256 => address[]) public participants;
-
     mapping(uint256 => mapping(address => uint256)) public winReward;
-
     mapping(address => mapping(uint256 => uint256))
-        public addressToDrawToTickets; // Mapping to track user, draw ID, and tickets
+        public addressToDrawToTickets;
     mapping(address => mapping(uint256 => uint256))
-        public addressToDrawToTokens; // Mapping to track user, draw ID, and deposited tokens
-
+        public addressToDrawToTokens;
     mapping(uint256 => bool) public isDistributed;
     mapping(address => mapping(uint256 => bool)) public isRefunded;
-
     mapping(uint256 => uint256) requestedDrawId;
 
     event NewDrawOpened(uint256 indexed drawId, uint256 entryPrice);
-    event DrawCompleted(
+    event DrawFinished(
         uint256 indexed drawId,
         address firstPlace,
         address secondPlace,
@@ -87,7 +82,7 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
     constructor(
         address _entryToken,
         address _vrfCoordinator
-    ) Ownable() VRFConsumerBaseV2(_vrfCoordinator) {
+    ) VRFConsumerBaseV2Plus(_vrfCoordinator) {
         require(_entryToken != address(0), "invalid token");
         require(_vrfCoordinator != address(0), "invalid vrf");
 
@@ -95,13 +90,19 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         nextDrawId = 1;
 
         entryToken = IERC20(_entryToken);
-        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
+        COORDINATOR = IVRFCoordinatorV2Plus(_vrfCoordinator);
     }
 
     function enterMultiple(uint256 _drawId, uint256 _count) public {
         Draw storage draw = draws[_drawId];
 
         require(draw.status == DrawStatus.OPEN, "Draw Not Opend");
+        if (draw.amount < draw.softcap) {
+            require(
+                block.timestamp < draw.startTime + draw.expiredTime,
+                "Draw Expired"
+            );
+        }
 
         entryToken.safeTransferFrom(
             msg.sender,
@@ -112,7 +113,6 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         draw.amount += draw.entryPrice * _count;
 
         uint256 count = _count + (_count / 10);
-
         for (uint256 i = 0; i < count; i++) {
             participants[_drawId].push(msg.sender);
         }
@@ -120,7 +120,7 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         addressToDrawToTickets[msg.sender][_drawId] = count;
         addressToDrawToTokens[msg.sender][_drawId] = draw.entryPrice * _count;
 
-        if (draw.amount >= draw.hardcap) pickWinner(_drawId);
+        if (draw.amount >= draw.hardcap) _pickWinner(_drawId);
 
         emit EnterDraw(_drawId, msg.sender, _count);
     }
@@ -131,9 +131,12 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         uint256 _softcap,
         uint256 _expiredTime
     ) external onlyOwner {
-        require(_entryPrice > 0, "zero Error");
-        require(_hardcap > _softcap && _softcap > 0, "Invalid");
-        require(_expiredTime > 0, "Zero Error");
+        require(_entryPrice > 0, "Invalid Entry Price");
+        require(
+            _hardcap > _softcap && _softcap >= _entryPrice,
+            "Invalid Price"
+        );
+        require(_expiredTime > 0, "Invalid Expired Time");
 
         uint256 drawId = nextDrawId;
 
@@ -157,29 +160,46 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         emit NewDrawOpened(drawId, _entryPrice);
     }
 
-    function pickWinner(uint256 _drawId) internal returns (uint256 requestId) {
+    function _pickWinner(uint256 _drawId) internal returns (uint256 requestId) {
         Draw storage draw = draws[_drawId];
 
         require(draw.status == DrawStatus.OPEN, "Draw Not Opened");
 
         draw.status = DrawStatus.CLOSING;
 
+        // requestId = COORDINATOR.requestRandomWords(
+        //     s_keyHash,
+        //     s_subscriptionId,
+        //     requestConfirmations,
+        //     callbackGasLimit,
+        //     3
+        // );
+
         requestId = COORDINATOR.requestRandomWords(
-            s_keyHash,
-            s_subscriptionId,
-            requestConfirmations,
-            callbackGasLimit,
-            3
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: s_keyHash,
+                subId: s_subscriptionId,
+                requestConfirmations: requestConfirmations,
+                callbackGasLimit: callbackGasLimit,
+                numWords: 3,
+                extraArgs: VRFV2PlusClient._argsToBytes(
+                    VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+                )
+            })
         );
 
         requestedDrawId[requestId] = _drawId;
 
-        return requestId; //
+        return requestId;
+    }
+
+    function pickWinner(uint256 _drawId) public onlyOwner {
+        _pickWinner(_drawId);
     }
 
     function fulfillRandomWords(
         uint256 _requestId,
-        uint256[] memory _randomWords
+        uint256[] calldata _randomWords
     ) internal override {
         uint256 drawId = requestedDrawId[_requestId];
 
@@ -223,7 +243,7 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         draws[drawId].secondPlace = secondPlace;
         draws[drawId].thirdPlace = thirdPlace;
 
-        emit DrawCompleted(drawId, firstPlace, secondPlace, thirdPlace);
+        emit DrawFinished(drawId, firstPlace, secondPlace, thirdPlace);
     }
 
     function distribute(uint256 _drawId) public {
@@ -267,12 +287,12 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
     function setVRFCoordinator(address _vrf) external onlyOwner {
         require(_vrf != address(0), "invalid address");
 
-        COORDINATOR = VRFCoordinatorV2Interface(_vrf);
+        COORDINATOR = IVRFCoordinatorV2Plus(_vrf);
     }
 
     function setSubscriptionData(
         bytes32 _keyHash,
-        uint64 _subscriptionId,
+        uint256 _subscriptionId,
         uint32 _callbackGasLimit
     ) external onlyOwner {
         s_keyHash = _keyHash;
@@ -285,7 +305,7 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         uint256 _second,
         uint256 _third
     ) external onlyOwner {
-        require(_first + _second + _third <= 100, "exceed");
+        require(_first + _second + _third <= 10000, "exceed");
 
         distributionRate = DistributionRate({
             first: _first,
@@ -309,18 +329,14 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
     function refund(uint256 _drawId) public {
         Draw memory draw = draws[_drawId];
 
+        require(draw.status == DrawStatus.OPEN, "Draw Completed");
         require(
-            draw.status == DrawStatus.OPEN &&
-                block.timestamp > draw.startTime + draw.expiredTime &&
-                draw.amount < draw.softcap,
-            "Not Refund"
+            draw.amount < draw.softcap &&
+                block.timestamp >= draw.startTime + draw.expiredTime,
+            "Draw Not Expired"
         );
-
-        require(
-            addressToDrawToTokens[msg.sender][_drawId] > 0,
-            "You did not enter in draw"
-        );
-        require(!isRefunded[msg.sender][_drawId], "You Already Refunded");
+        require(addressToDrawToTokens[msg.sender][_drawId] > 0, "Not eligible");
+        require(!isRefunded[msg.sender][_drawId], "Already Refunded");
 
         entryToken.safeTransferFrom(
             address(this),
@@ -329,5 +345,13 @@ contract Fortune is Ownable, Pausable, VRFConsumerBaseV2 {
         );
         isRefunded[msg.sender][_drawId] = true;
         emit Refunded(msg.sender, _drawId);
+    }
+
+    function isExpired(uint256 _drawId) public view returns (bool) {
+        Draw memory draw = draws[_drawId];
+        bool expired = draw.status == DrawStatus.OPEN &&
+            draw.amount < draw.softcap &&
+            block.timestamp >= (draw.startTime + draw.expiredTime);
+        return expired;
     }
 }
