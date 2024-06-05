@@ -51,9 +51,9 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
 
     uint256 public nextDrawId;
     uint256 public s_subscriptionId;
-    // bytes32 s_keyHash =
-    //     0x17cd473250a9a479dc7f234c64332ed4bc8af9e8ded7556aa6e66d83da49f470;
-    bytes32 s_keyHash;
+    bytes32 s_keyHash =
+        0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+    // bytes32 s_keyHash;
     uint32 callbackGasLimit = 2_500_000;
     uint16 private constant requestConfirmations = 3;
 
@@ -167,14 +167,6 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
 
         draw.status = DrawStatus.CLOSING;
 
-        // requestId = COORDINATOR.requestRandomWords(
-        //     s_keyHash,
-        //     s_subscriptionId,
-        //     requestConfirmations,
-        //     callbackGasLimit,
-        //     3
-        // );
-
         requestId = COORDINATOR.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: s_keyHash,
@@ -284,20 +276,20 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
         emit WinningClaimed(_drawId);
     }
 
-    function setVRFCoordinator(address _vrf) external onlyOwner {
-        require(_vrf != address(0), "invalid address");
+    function setVRFCoordinator(address _vrfCoordinator) external onlyOwner {
+        require(_vrfCoordinator != address(0), "invalid address");
 
-        COORDINATOR = IVRFCoordinatorV2Plus(_vrf);
+        COORDINATOR = IVRFCoordinatorV2Plus(_vrfCoordinator);
     }
 
     function setSubscriptionData(
-        bytes32 _keyHash,
-        uint256 _subscriptionId,
-        uint32 _callbackGasLimit
+        // bytes32 _keyHash,
+        uint256 _subscriptionId
+        // uint32 _callbackGasLimit
     ) external onlyOwner {
-        s_keyHash = _keyHash;
+        // s_keyHash = _keyHash;
         s_subscriptionId = _subscriptionId;
-        callbackGasLimit = _callbackGasLimit;
+        // callbackGasLimit = _callbackGasLimit;
     }
 
     function updateDistributionRate(
@@ -327,23 +319,18 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
     }
 
     function refund(uint256 _drawId) public {
+        bool expired = isExpired(_drawId);
+        require(expired, "Draw Not Expired");
+
         Draw memory draw = draws[_drawId];
 
-        require(draw.status == DrawStatus.OPEN, "Draw Completed");
-        require(
-            draw.amount < draw.softcap &&
-                block.timestamp >= draw.startTime + draw.expiredTime,
-            "Draw Not Expired"
-        );
-        require(addressToDrawToTokens[msg.sender][_drawId] > 0, "Not eligible");
-        require(!isRefunded[msg.sender][_drawId], "Already Refunded");
+        require(addressToDrawToTokens[msg.sender][_drawId] > 0, "Not Eligible");
+        require(!isRefunded[msg.sender][_drawId], "Already Refund");
 
-        entryToken.safeTransferFrom(
-            address(this),
-            msg.sender,
-            addressToDrawToTokens[msg.sender][_drawId]
-        );
+        entryToken.safeTransfer(msg.sender, addressToDrawToTokens[msg.sender][_drawId]);
+        
         isRefunded[msg.sender][_drawId] = true;
+
         emit Refunded(msg.sender, _drawId);
     }
 

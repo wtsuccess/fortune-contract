@@ -15,7 +15,8 @@
     "deploy-fortune": "npx hardhat run scripts/deploy.cjs --network polygon",
     "deploy-token": "npx hardhat run scripts/deploy-token.cjs --network polygon",
     "deploy-testnet": "npx hardhat run scripts/deploy-testnet.cjs --network sepolia",
-    "verify": "npx hardhat verify  --network polygon"
+    "verify": "npx hardhat verify  --network polygon",
+    "verify-testnet": "npx hardhat verify --network sepolia"
   },
   "author": "",
   "license": "ISC",

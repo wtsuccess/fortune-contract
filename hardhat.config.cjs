@@ -1,28 +1,34 @@
 require("@nomicfoundation/hardhat-toolbox");
-require('solidity-coverage');
-require('@openzeppelin/hardhat-upgrades');
+require("solidity-coverage");
+require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
 
-const { POLYGON_RPC_PROVIDER, PRIVATE_KEY, POLYGONSCAN_API_KEY } = process.env;
+const {
+  POLYGON_RPC_PROVIDER,
+  PRIVATE_KEY,
+  POLYGONSCAN_API_KEY,
+  ETHERSCAN_API_KEY,
+  PRIVATE_KEY_TESTNET,
+} = process.env;
 
 module.exports = {
   networks: {
-    // sepolia: {
-    //   url: "https://rpc.sepolia.org",
-    //   accounts: [secrets.account[0]]
-    // },
+    sepolia: {
+      url: "https://rpc.sepolia.org",
+      accounts: [PRIVATE_KEY_TESTNET],
+    },
     polygon: {
       url: POLYGON_RPC_PROVIDER,
-      accounts: [PRIVATE_KEY]
-    }
+      accounts: [PRIVATE_KEY],
+    },
   },
   etherscan: {
-    apiKey: POLYGONSCAN_API_KEY,
+    apiKey: ETHERSCAN_API_KEY,
   },
   solidity: {
     gasReporter: {
-      enabled: true
+      enabled: true,
     },
     compilers: [
       {
@@ -34,6 +40,6 @@ module.exports = {
           },
         },
       },
-    ]
+    ],
   },
 };
