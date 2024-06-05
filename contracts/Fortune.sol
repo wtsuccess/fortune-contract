@@ -320,15 +320,13 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
 
     function refund(uint256 _drawId) public {
         bool expired = isExpired(_drawId);
+
         require(expired, "Draw Not Expired");
-
-        Draw memory draw = draws[_drawId];
-
         require(addressToDrawToTokens[msg.sender][_drawId] > 0, "Not Eligible");
         require(!isRefunded[msg.sender][_drawId], "Already Refund");
 
         entryToken.safeTransfer(msg.sender, addressToDrawToTokens[msg.sender][_drawId]);
-        
+
         isRefunded[msg.sender][_drawId] = true;
 
         emit Refunded(msg.sender, _drawId);
