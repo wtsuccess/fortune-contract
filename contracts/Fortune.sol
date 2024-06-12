@@ -47,7 +47,7 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
     DistributionRate public distributionRate;
     IVRFCoordinatorV2Plus COORDINATOR;
 
-    address treasurer;
+    address public treasurer;
 
     uint256 public nextDrawId;
     uint256 public s_subscriptionId;
@@ -309,7 +309,7 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
     }
 
     function setEntryToken(address _addr) external onlyOwner {
-        require(_addr != address(0), "zero");
+        require(_addr != address(0), "zero address");
         entryToken = IERC20(_addr);
     }
 
@@ -340,5 +340,10 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
             draw.amount < draw.softcap &&
             block.timestamp >= (draw.startTime + draw.expiredTime);
         return expired;
+    }
+
+    function setTreasurer(address _treasurer) external onlyOwner {
+        require(_treasurer != address(0), "zero address");
+        treasurer = _treasurer;
     }
 }
