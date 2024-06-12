@@ -7,9 +7,10 @@
 const hre = require("hardhat");
 
 async function main() {
-  const _vrfCoordinator = "0xAE975071Be8F8eE67addBC1A82488F1C24858067";
+  const _usdc = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174"; // polygon USDC address
+  const _vrfCoordinator = "0xec0Ed46f36576541C75739E915ADbCb3DE24bD77"; //polygon mainnet coordinator
   const Fortune = await hre.ethers.getContractFactory("Fortune");
-  const fortune = await Fortune.deploy(_vrfCoordinator);
+  const fortune = await Fortune.deploy(_usdc, _vrfCoordinator);
 
   await fortune.deployed();
 

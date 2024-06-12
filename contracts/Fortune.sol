@@ -51,8 +51,10 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
 
     uint256 public nextDrawId;
     uint256 public s_subscriptionId;
+    // bytes32 s_keyHash =
+    //     0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae; // sepolia key hash
     bytes32 s_keyHash =
-        0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+        0x0ffbbd0c1c18c0263dd778dadd1d64240d7bc338d95fec1cf0473928ca7eaf9e; // polygon mainnet key hash
     // bytes32 s_keyHash;
     uint32 callbackGasLimit = 2_500_000;
     uint16 private constant requestConfirmations = 3;
