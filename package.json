@@ -13,7 +13,8 @@
     "coverage": "npx hardhat coverage",
     "typechain:generate": "yarn typechain --target=ethers-v5 ./contracts/**/*.sol --out-dir=./types",
     "deploy-fortune": "npx hardhat run scripts/deploy.cjs --network polygon",
-    "deploy-token": "npx hardhat run scripts/deploy-token.cjs --network polygon",
+    "deploy-usdc": "npx hardhat run scripts/deploy-usdc.cjs --network sepolia",
+    "deploy-usdce": "npx hardhat run scripts/deploy-usdce.cjs --network sepolia",
     "deploy-testnet": "npx hardhat run scripts/deploy-testnet.cjs --network sepolia",
     "verify": "npx hardhat verify  --network polygon",
     "verify-testnet": "npx hardhat verify --network sepolia"
@@ -27,6 +28,7 @@
     "@openzeppelin/contracts": "^4.8.2",
     "dotenv": "^16.4.5",
     "ethers": "^5.7.2",
+    "hardhat-gas-reporter": "^2.2.0",
     "helpers": "^0.0.6"
   },
   "devDependencies": {

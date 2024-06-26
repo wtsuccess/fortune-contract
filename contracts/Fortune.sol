@@ -6,9 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// import "@chainlink/contracts/src/v0.8/interfaces/.sol";
-// import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {IVRFCoordinatorV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFCoordinatorV2Plus.sol";
@@ -367,7 +364,7 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
         // callbackGasLimit = _callbackGasLimit;
     }
 
-    function updateDistributionRate(
+    function setDistributionRate(
         uint256 _first,
         uint256 _second,
         uint256 _third

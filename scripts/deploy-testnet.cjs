@@ -7,11 +7,12 @@
 const hre = require("hardhat");
 
 async function main() {
-  const _usdc = "0x4379aE6e0b9b0d87a21a87E63E0a065a383a710b";
+  const _usdc = "0x1671C11B783Ccd324f217A910d89891240880e20";
+  const _usdce = "0x347917a0872d06FD0B86Cb00DEA4CD60D8b69d83";
   const _vrfCoordinator = "0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B";
   
   const Fortune = await hre.ethers.getContractFactory("Fortune");
-  const fortune = await Fortune.deploy(_usdc, _vrfCoordinator);
+  const fortune = await Fortune.deploy(_usdc, _usdce, _vrfCoordinator);
 
   await fortune.deployed();
 

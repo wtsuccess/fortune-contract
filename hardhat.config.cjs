@@ -15,7 +15,7 @@ const {
 module.exports = {
   networks: {
     sepolia: {
-      url: "https://rpc.sepolia.org",
+      url: "https://ethereum-sepolia-rpc.publicnode.com",
       accounts: [PRIVATE_KEY_TESTNET],
     },
     polygon: {
@@ -24,7 +24,7 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: POLYGONSCAN_API_KEY,
+    apiKey: ETHERSCAN_API_KEY,
   },
   solidity: {
     gasReporter: {
