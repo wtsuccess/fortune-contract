@@ -351,17 +351,8 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
         COORDINATOR = IVRFCoordinatorV2Plus(_vrfCoordinator);
     }
 
-    function setSubscriptionData(
-        // bytes32 _keyHash,
-        uint256 _subscriptionId
-    )
-        external
-        // uint32 _callbackGasLimit
-        onlyOwner
-    {
-        // s_keyHash = _keyHash;
+    function setSubscriptionData(uint256 _subscriptionId) external onlyOwner {
         s_subscriptionId = _subscriptionId;
-        // callbackGasLimit = _callbackGasLimit;
     }
 
     function setDistributionRate(
@@ -377,11 +368,6 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
             third: _third
         });
     }
-
-    // function setEntryToken(address _addr) external onlyOwner {
-    //     require(_addr != address(0), "zero address");
-    //     entryToken = IERC20(_addr);
-    // }
 
     function refund(uint256 _drawId) public {
         bool expired = isExpired(_drawId);
