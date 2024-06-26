@@ -23,11 +23,6 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
         CLOSED
     }
 
-    enum PaymentToken {
-        USDC,
-        USDCE
-    }
-
     struct DistributionRate {
         uint256 first;
         uint256 second;
