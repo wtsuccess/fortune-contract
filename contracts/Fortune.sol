@@ -171,7 +171,7 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
         emit NewDrawOpened(drawId, _price);
     }
 
-    function editExpiredTime(
+    function setExpiredTime(
         uint256 _drawId,
         uint256 _expiredTime
     ) external onlyOwner {
