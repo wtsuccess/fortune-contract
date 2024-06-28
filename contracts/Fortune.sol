@@ -371,7 +371,6 @@ contract Fortune is Pausable, VRFConsumerBaseV2Plus {
 
     function refund(uint256 _drawId) public {
         bool expired = isExpired(_drawId);
-
         require(expired, "Draw Not Expired");
         require(
             addressToDrawToUSDC[msg.sender][_drawId] > 0 ||
